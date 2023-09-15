@@ -1,10 +1,13 @@
 import requests
 import re
 from bs4 import BeautifulSoup
+import csv
+file = open("outputs.csv", mode="w", encoding="utf-8", newline="")
+writer = csv.writer(file)
+
 headers = {
     'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'
 }
-
 
 for page in range(2,5) :
 
@@ -16,11 +19,16 @@ for page in range(2,5) :
   sams = BeautifulSoup(res.text, 'html.parser')
 
   for tr in sams.select('table.type2 > tr') :
+    temp = []
 
     if tr.attrs != {} :
-      # print(tr.select('td')[0])
-      if re.match('2023.08.+', tr.select('td')[0].text) != None : 
-        for td in tr.select('td') :
-          print(td.text.strip()+'|', end='')
 
-      print()
+      if re.match('2023.08.+', tr.select('td')[0].text) != None : 
+
+        for td in tr.select('td') :
+          temp.append(td.text.strip())
+
+        print(temp)
+        writer.writerow(temp)
+
+file.close()
