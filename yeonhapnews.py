@@ -5,6 +5,13 @@ import json
 
 headers = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'}
 
+def modify(body) :
+  body = BeautifulSoup(re.sub('<em class="img_desc">((?!<\/em>).)*<\/em>', '', str(body))).text
+  result = re.search('.*(?=[^a-zA-Z0-9][a-zA-Z0-9]+@[a-zA-Z]+\.(com|kr|co.kr))', body)
+  body = result.group()
+  body = re.sub('\([가-힣]+\=연합뉴스\) [가-힣]{2,4} (기자|특파원|통신원) \=', '', body) 
+  return body.replace('\n', ' ').strip()
+
 def count_react(dic) :
   reactNum = 0
   for emo in dic :
@@ -14,6 +21,8 @@ def count_react(dic) :
 def get_react(link) :
   result = re.search('{.+}', link.text)
   return json.loads(result.group())
+
+
 
 for date in range(20230801,20230803) :
 
@@ -34,7 +43,8 @@ for date in range(20230801,20230803) :
 
 
           if yh2.find('article') != None :   # 일반뉴스
-            print(yh2.find('article').text.replace('\n', ' ').strip())
+            # print(yh2.find('article').text.replace('\n', ' ').strip())
+            print(modify(yh2.find('article')))
 
             if yh2.find('div', attrs={'data-ccounttype':'period'}) != None :
               cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
@@ -54,7 +64,8 @@ for date in range(20230801,20230803) :
 
 
           elif yh2.find('div', id='newsEndContents') != None :   # 스포츠
-            print(yh2.find('div', id='newsEndContents').text.replace('\n', ' ').strip())
+            # print(yh2.find('div', id='newsEndContents').text.replace('\n', ' ').strip())
+            print(modify(yh2.find('div', id='newsEndContents')))
 
             cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
             params = {
@@ -67,8 +78,8 @@ for date in range(20230801,20230803) :
 
 
           elif yh2.find('div', id='articeBody') != None :   # 연예
-            # print('카테고리 :', yh2.select_one('em.guide_categorization_item').text)
-            print(yh2.find('div', id='articeBody').text.replace('\n', ' ').strip())
+            # print(yh2.find('div', id='articeBody').text.replace('\n', ' ').strip())
+            print(modify(yh2.find('div', id='articeBody')))
 
             cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
             params = {
