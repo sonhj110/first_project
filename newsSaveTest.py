@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import re
 import json
 import csv
-file = open("news.csv",mode="w",encoding="utf-8",newline="")
+file = open("news2.csv",mode="w",encoding="utf-8",newline="")
 writer = csv.writer(file)
 
 writer.writerow(['제목','날짜','분류','본문','반응수'])
@@ -34,7 +34,7 @@ def get_react(link) :
 
 
 
-for date in range(20230801,20230832) :
+for date in range(20230802,20230832) :
 
   for page in range(1,1000) :
     yeonhap = requests.get(f'https://news.naver.com/main/list.naver?mode=LPOD&mid=sec&oid=001&date={date}&page={page}', headers=headers)
@@ -65,29 +65,29 @@ for date in range(20230801,20230832) :
 
             if yh2.find('div', attrs={'data-ccounttype':'period'}) != None :
               cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
-              params = {
-                'q': 'JOURNALIST[' + cid + '(period)]|NEWS[ne_001_' + aid + ']'
-                }
+              params = {'q': f'JOURNALIST[{cid}(period)]|NEWS[ne_001_{aid}]'}
               res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
               yhdic = get_react(res)
               temp.append(count_react(yhdic['contents'][1]['reactions']))
 
             else :
-              params = {'q': 'NEWS[ne_001_' + aid + ']'}
+              params = {'q': f'NEWS[ne_001_{aid}]'}
               res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
               yhdic = get_react(res)
               temp.append(count_react(yhdic['contents'][0]['reactions']))
-
 
 
           elif yh2.find('div', id='newsEndContents') != None :   # 스포츠
             temp.append('스포츠')
             temp.append(modify(yh2.find('div', id='newsEndContents').text))
 
-            cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
-            params = {
-              'q': 'SPORTS[ne_001_' + aid + ']|JOURNALIST[' + cid + '(period)]|SPORTS_MAIN[ne_001_' + aid + ']'
-              }
+            if yh2.find('div', attrs={'data-ccounttype' : 'period'}) != None :
+              cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
+              params = {'q': f'SPORTS[ne_001_{aid}]|JOURNALIST[{cid}(period)]|SPORTS_MAIN[ne_001_{aid}]'}
+            
+            else :
+              params = {'q': f'SPORTS[ne_001_{aid}]|SPORTS_MAIN[ne_001_{aid}]'}
+
             res = requests.get('https://sports.like.naver.com/v1/search/contents', headers=headers, params=params)
             yhdic = get_react(res)
             temp.append(count_react(yhdic['contents'][0]['reactions']))
@@ -97,10 +97,12 @@ for date in range(20230801,20230832) :
             temp.append('연예')
             temp.append(modify(yh2.find('div', id='articeBody').text))
 
-            cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
-            params = {
-                'q': 'ENTERTAIN[ne_001_' + aid + ']|JOURNALIST[' + cid + '(period)]|ENTERTAIN_MAIN[ne_001_' + aid + ']'
-              }
+            if yh2.find('div', attrs={'data-ccounttype' : 'period'}) != None :
+              cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
+              params = {'q': f'ENTERTAIN[ne_001_{aid}]|JOURNALIST[{cid}(period)]|ENTERTAIN_MAIN[ne_001_{aid}]'}
+            
+            else :
+              params = {'q': f'ENTERTAIN[ne_001_{aid}]|ENTERTAIN_MAIN[ne_001_{aid}]'}              
             res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
             yhdic = get_react(res)
             temp.append(count_react(yhdic['contents'][0]['reactions']))
