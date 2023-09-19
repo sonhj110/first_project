@@ -33,7 +33,7 @@ for date in range(20230813,20230815) :
 
   for page in range(50,52) :
     params = {'mode':'LPOD', 'mid':'sec', 'oid':'001', 'date':date, 'page':page}
-    yeonhap = requests.get('https://news.naver.com/main/list.naver', headers=headers, params=params)
+    yeonhap = requests.get('https://news.naver.com/main/list.naver', headers=headers, params=params, verify=False)
     yh = BeautifulSoup(yeonhap.text, 'html.parser')
 
     for dt in yh.select('div.list_body li dt') :
@@ -43,7 +43,7 @@ for date in range(20230813,20230815) :
           print(dt.find('a').attrs['href'].strip())   # 뉴스링크
           result = re.search('[0-9]{10}', dt.find('a').attrs['href'])
           aid = result.group()
-          yeonhap2 = requests.get(dt.find('a').attrs['href'].strip())
+          yeonhap2 = requests.get(dt.find('a').attrs['href'].strip(), headers=headers, verify=False)
           yh2 = BeautifulSoup(yeonhap2.text, 'html.parser')
 
 
@@ -57,13 +57,13 @@ for date in range(20230813,20230815) :
               params = {
                 'q': 'JOURNALIST[' + cid + '(period)]|NEWS[ne_001_' + aid + ']'
                 }
-              res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
+              res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params, verify=False)
               yhdic = get_react(res)
               count_react(yhdic['contents'][1]['reactions'])
 
             else :
               params = {'q': 'NEWS[ne_001_' + aid + ']'}
-              res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
+              res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params, verify=False)
               yhdic = get_react(res)
               count_react(yhdic['contents'][0]['reactions'])
 
@@ -79,7 +79,7 @@ for date in range(20230813,20230815) :
             params = {
               'q': 'SPORTS[ne_001_' + aid + ']|JOURNALIST[' + cid + '(period)]|SPORTS_MAIN[ne_001_' + aid + ']'
               }
-            res = requests.get('https://sports.like.naver.com/v1/search/contents', headers=headers, params=params)
+            res = requests.get('https://sports.like.naver.com/v1/search/contents', headers=headers, params=params, verify=False)
             yhdic = get_react(res)
             count_react(yhdic['contents'][0]['reactions'])
 
