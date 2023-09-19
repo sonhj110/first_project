@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import re
 import json
 import csv
-file = open("news2.csv",mode="w",encoding="utf-8",newline="")
+file = open("news.csv",mode="w",encoding="utf-8",newline="")
 writer = csv.writer(file)
 
 writer.writerow(['제목','날짜','분류','본문','반응수'])
@@ -16,7 +16,7 @@ def modify(body) :
     del_email = re.search('(.|\n)*(?=[^a-zA-Z0-9][a-zA-Z0-9]+@[a-zA-Z]+\.(com|kr|co.kr))', body)
     body = del_email.group()
   except :
-    print('', end='')
+    pass
   finally :
     body = re.sub('\([가-힣]+\=연합뉴스\)', '', body)
     body = re.sub('[가-힣]{2,4} (기자|특파원|통신원) \=', '', body)
@@ -28,17 +28,19 @@ def count_react(dic) :
     reactNum = reactNum + int(emo['count'])
   return reactNum
 
-def get_react(link) :
-  reactLink = re.search('{.+}', link.text)
-  return json.loads(reactLink.group())
+# def get_react(link) :
+#   reactLink = re.search('{.+}', link.text)  # 이거 안해도 됨 params값 q만 남기니까 이상한 문자 다 지워짐
+#   return json.loads(reactLink.group())
 
 
-
-for date in range(20230802,20230832) :
+for date in range(20230801,20230832) :
 
   for page in range(1,1000) :
     yeonhap = requests.get(f'https://news.naver.com/main/list.naver?mode=LPOD&mid=sec&oid=001&date={date}&page={page}', headers=headers)
     yh = BeautifulSoup(yeonhap.text, 'html.parser')
+
+    if int(yh.select_one('div.paging > strong').text) != page :
+      break
 
     for dt in yh.select('div.list_body li dt') :
 
@@ -67,13 +69,13 @@ for date in range(20230802,20230832) :
               cid = yh2.find('div', attrs={'data-ccounttype':'period'}).attrs['data-cid']
               params = {'q': f'JOURNALIST[{cid}(period)]|NEWS[ne_001_{aid}]'}
               res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
-              yhdic = get_react(res)
+              yhdic = json.loads(res.text)
               temp.append(count_react(yhdic['contents'][1]['reactions']))
 
             else :
               params = {'q': f'NEWS[ne_001_{aid}]'}
               res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
-              yhdic = get_react(res)
+              yhdic = json.loads(res.text)
               temp.append(count_react(yhdic['contents'][0]['reactions']))
 
 
@@ -89,7 +91,7 @@ for date in range(20230802,20230832) :
               params = {'q': f'SPORTS[ne_001_{aid}]|SPORTS_MAIN[ne_001_{aid}]'}
 
             res = requests.get('https://sports.like.naver.com/v1/search/contents', headers=headers, params=params)
-            yhdic = get_react(res)
+            yhdic = json.loads(res.text)
             temp.append(count_react(yhdic['contents'][0]['reactions']))
 
 
@@ -104,18 +106,11 @@ for date in range(20230802,20230832) :
             else :
               params = {'q': f'ENTERTAIN[ne_001_{aid}]|ENTERTAIN_MAIN[ne_001_{aid}]'}              
             res = requests.get('https://news.like.naver.com/v1/search/contents', headers=headers, params=params)
-            yhdic = get_react(res)
+            yhdic = json.loads(res.text)
             temp.append(count_react(yhdic['contents'][0]['reactions']))
 
           print(temp)
           writer.writerow(temp)
     
-    af_yeonhap = requests.get(f'https://news.naver.com/main/list.naver?mode=LPOD&mid=sec&oid=001&date={date}&page={page+1}', headers=headers)
-    after_yh = BeautifulSoup(af_yeonhap.text, 'html.parser')
-
-    if yh.select_one('div.paging > strong') == after_yh.select_one('div.paging > strong') :
-      break
-
-
 
 file.close()
