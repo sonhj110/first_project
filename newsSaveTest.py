@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import re 
+import re
 import json
 import csv
 file = open("news.csv",mode="w",encoding="utf-8",newline="")
@@ -34,11 +34,10 @@ def get_react(link) :
 
 
 
-for date in range(20230805,20230807) :
+for date in range(20230801,20230832) :
 
-  for page in range(50,52) :
-    params = {'mode':'LPOD', 'mid':'sec', 'oid':'001', 'date':date, 'page':page}
-    yeonhap = requests.get('https://news.naver.com/main/list.naver', headers=headers, params=params)
+  for page in range(1,1000) :
+    yeonhap = requests.get(f'https://news.naver.com/main/list.naver?mode=LPOD&mid=sec&oid=001&date={date}&page={page}', headers=headers)
     yh = BeautifulSoup(yeonhap.text, 'html.parser')
 
     for dt in yh.select('div.list_body li dt') :
@@ -50,13 +49,18 @@ for date in range(20230805,20230807) :
 
           result = re.search('[0-9]{10}', dt.find('a').attrs['href'])
           aid = result.group()
+          print(dt.find('a').attrs['href'].strip())    # 기사링크 출력
           yeonhap2 = requests.get(dt.find('a').attrs['href'].strip())
           yh2 = BeautifulSoup(yeonhap2.text, 'html.parser')
 
 
           if yh2.find('article') != None :   # 일반뉴스
 
-            temp.append(yh2.select_one('em.media_end_categorize_item').text)
+            try :
+              temp.append(yh2.select_one('em.media_end_categorize_item').text)
+            except :
+              temp.append('없음')
+
             temp.append(modify(yh2.find('article').text))
 
             if yh2.find('div', attrs={'data-ccounttype':'period'}) != None :
@@ -103,6 +107,13 @@ for date in range(20230805,20230807) :
 
           print(temp)
           writer.writerow(temp)
-      
+    
+    af_yeonhap = requests.get(f'https://news.naver.com/main/list.naver?mode=LPOD&mid=sec&oid=001&date={date}&page={page+1}', headers=headers)
+    after_yh = BeautifulSoup(af_yeonhap.text, 'html.parser')
+
+    if yh.select_one('div.paging > strong') == after_yh.select_one('div.paging > strong') :
+      break
+
+
 
 file.close()
