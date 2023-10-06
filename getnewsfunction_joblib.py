@@ -37,23 +37,11 @@ def get_news(URL) :
     title = soup.select_one('h2#title_area > span').text.strip()
     content = modify(soup.select_one('article#dic_area').text)
     # date = soup.select_one('span._ARTICLE_DATE_TIME').text # 이거보다
-    date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time']
+    date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time'] # 이게 날짜형태로 변환할 수 있어서 더 좋음
     media = soup.select_one('a.media_end_head_top_logo > img')['title']
 
-  elif soup.select_one('h4.title') :   # 스포츠
-    title = soup.select_one('h4.title').text.strip()
-    content = modify(soup.select_one('div#newsEndContents').text)
-    _date = soup.select_one('div.info > span').text
-    date = re.search('[^가-힣 ]+', _date).group()
-    media = soup.select_one('span#pressLogo > a > img')['alt']
-
-  elif soup.select_one('h2.end_tit') :
+  else :
     pass
-    title = soup.select_one('h2.end_tit').text.strip()
-    content = modify(soup.select_one('div#articeBody').text)
-    _date = soup.select_one('div.article_info > span.author > em').text
-    date = re.search('[^가-힣 ]+', _date).group()
-    media = soup.select_one('div.press_logo > a > img')['alt']
 
   return (title, date, media, content, URL)   
 
@@ -89,8 +77,11 @@ def get_news_value(d, k, s) :
     for li in soup.select('ul.list_news > li') :
       if len(li.select('div.info_group > a')) == 2 :
         print(li.select('div.info_group > a')[1]['href'])
-        writer.writerow(get_news(li.select('div.info_group > a')[1]['href']))
-    
+        try :
+          writer.writerow(get_news(li.select('div.info_group > a')[1]['href']))
+        except :
+          pass
+        
     page += 1
 
   file.close()  
