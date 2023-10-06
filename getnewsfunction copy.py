@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import datetime as dt
 import csv
+import ray
 import time
-
 
 # 뉴스 제목 본문 등 크롤링하는 함수
 def get_news(URL) :
@@ -22,9 +22,10 @@ def get_news(URL) :
 
 
 # 키워드, 날짜 입력하면 그 기간동안 모든 뉴스 리스트 뽑아서 csv로 저장하는 함수 
+@ray.remote
 def get_news_list(keyword, startdate, enddate) : 
 
-  file = open("news_tesla.csv",mode="w",encoding="utf-8",newline="")
+  file = open("news_tesla_ray.csv",mode="w",encoding="utf-8",newline="")
   writer = csv.writer(file)
 
   headers = {
@@ -58,10 +59,14 @@ def get_news_list(keyword, startdate, enddate) :
 
   file.close()
 
+
 start_time = time.time()
 
-get_news_list('테슬라', '2022.09.29', '2022.9.30')
+tesla = get_news_list.remote('테슬라', '2022.09.29', '2022.9.30')
+result = ray.get(tesla)
+
+ray.shutdown()
 
 end_time = time.time()
 
-print('소요시간 : ', end_time - start_time)   # 소요시간 :  116.81805682182312
+print('소요시간 : ', end_time - start_time)   # 소요시간 :  101.68625545501709
