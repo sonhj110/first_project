@@ -3,8 +3,28 @@ from bs4 import BeautifulSoup
 import datetime as dt
 import csv
 import time
+import re
 import multiprocessing as mp
 from joblib import Parallel, delayed
+
+
+##### 기사 본문 전처리 함수
+def modify(body) :
+  # body = BeautifulSoup(re.sub('<em class="img_desc">((?!<\/em>).)*<\/em>', '', str(body))).text
+  try :
+    result = re.search('(.|\n)*(?=[^a-zA-Z0-9][a-zA-Z0-9]+@[a-zA-Z]+\.(com|kr|co.kr))', body)
+    body = result.group()
+  except Exception as e :
+    pass
+    # print('예외발생', e)
+  finally :
+    body = re.sub('\([가-힣]+\=연합뉴스\)', '', body)
+    body = re.sub('[가-힣]{2,4} (기자|특파원|통신원)', '', body)
+  return body.replace('\n', ' ').strip()
+
+
+
+
 
 
 ##### 뉴스 제목 본문 등 크롤링하는 함수
@@ -12,14 +32,30 @@ def get_news(URL) :
 
   res = requests.get(URL)
   soup = BeautifulSoup(res.text, 'html.parser')
+  
+  if soup.select_one('h2#title_area > span') :  # 일반뉴스
+    title = soup.select_one('h2#title_area > span').text.strip()
+    content = modify(soup.select_one('article#dic_area').text)
+    # date = soup.select_one('span._ARTICLE_DATE_TIME').text # 이거보다
+    date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time']
+    media = soup.select_one('a.media_end_head_top_logo > img')['title']
 
-  title = soup.select_one('h2#title_area > span').text
-  content = soup.select_one('article#dic_area').text.strip().replace('\n',' ')
-  # date = soup.select_one('span._ARTICLE_DATE_TIME').text # 이거보다
-  date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time'] # 이게 날짜형태로 변환할 수 있어서 더 좋음
-  media = soup.select_one('a.media_end_head_top_logo > img')['title']
+  elif soup.select_one('h4.title') :   # 스포츠
+    title = soup.select_one('h4.title').text.strip()
+    content = modify(soup.select_one('div#newsEndContents').text)
+    _date = soup.select_one('div.info > span').text
+    date = re.search('[^가-힣 ]+', _date).group()
+    media = soup.select_one('span#pressLogo > a > img')['alt']
 
-  return (title, date, media, content, URL)
+  elif soup.select_one('h2.end_tit') :
+    pass
+    title = soup.select_one('h2.end_tit').text.strip()
+    content = modify(soup.select_one('div#articeBody').text)
+    _date = soup.select_one('div.article_info > span.author > em').text
+    date = re.search('[^가-힣 ]+', _date).group()
+    media = soup.select_one('div.press_logo > a > img')['alt']
+
+  return (title, date, media, content, URL)   
 
 
 
@@ -29,11 +65,11 @@ def get_news(URL) :
 ##### 날짜 옮겨가면서 csv로 저장할 함수(joblib 적용할 함수)
 def get_news_value(d, k, s) :
 
-  file = open(f"newsTesla_{d}.csv",mode="w",encoding="utf-8",newline="")
+  now = s + dt.timedelta(days=d)   # d값을 일수로 변환해서 날짜 연산
+  nowdate = str(now.strftime('%Y.%m.%d'))
+  file = open(f"samsung_{str(now.strftime('%y%m%d'))}.csv",mode="w",encoding="utf-8",newline="")
   writer = csv.writer(file)
 
-  nowdate = s + dt.timedelta(days=d)   # d값을 일수로 변환해서 날짜 연산
-  nowdate = str(nowdate.strftime('%Y.%m.%d'))
   page = 1
 
   while True :
@@ -46,7 +82,6 @@ def get_news_value(d, k, s) :
     }
     res = requests.get(URL, headers=headers)
     soup = BeautifulSoup(res.text, 'html.parser')
-    print(soup)
 
     if soup.select('ul.list_news') == [] :
       break
@@ -89,8 +124,8 @@ def get_news_list(keyword, startdate, enddate) :
 
 start_time = time.time()
 
-get_news_list('테슬라', '2022.09.29', '2022.9.30')
+get_news_list('삼성', '2022.09.29', '2022.9.30')
 
 end_time = time.time()
 
-print('소요시간 : ', end_time - start_time)
+print('소요시간 : ', end_time - start_time)   # 소요시간 :  34.16688537597656
