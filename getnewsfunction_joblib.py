@@ -33,16 +33,13 @@ def get_news(URL) :
   res = requests.get(URL)
   soup = BeautifulSoup(res.text, 'html.parser')
   
-  if soup.select_one('h2#title_area > span') :  # 일반뉴스
-    title = soup.select_one('h2#title_area > span').text.strip()
-    content = modify(soup.select_one('article#dic_area').text)
-    # date = soup.select_one('span._ARTICLE_DATE_TIME').text # 이거보다
-    date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time'] # 이게 날짜형태로 변환할 수 있어서 더 좋음
-    media = soup.select_one('a.media_end_head_top_logo > img')['title']
-    return (title, date, media, content, URL)
+  title = soup.select_one('h2#title_area > span').text.strip()
+  content = modify(soup.select_one('article#dic_area').text)
+  # date = soup.select_one('span._ARTICLE_DATE_TIME').text # 이거보다
+  date = soup.select_one('span._ARTICLE_DATE_TIME')['data-date-time'] # 이게 날짜형태로 변환할 수 있어서 더 좋음
+  media = soup.select_one('a.media_end_head_top_logo > img')['title']
+  return (title, date, media, content, URL)
 
-  else :
-    return ''
 
 
 
@@ -78,7 +75,10 @@ def get_news_value(d, k, s) :
     for li in soup.select('ul.list_news > li') :
       if len(li.select('div.info_group > a')) == 2 :
         # print(li.select('div.info_group > a')[1]['href'])
-        writer.writerow(get_news(li.select('div.info_group > a')[1]['href']))
+        try :
+          writer.writerow(get_news(li.select('div.info_group > a')[1]['href']))
+        except :
+          pass
         
     page += 1
 
@@ -99,7 +99,7 @@ def get_news_list(keyword, startdate, enddate) :
   startdate = dt.datetime.strptime(startdate, '%Y.%m.%d')   # 문자열을 날짜로 바꾸는 함수
   enddate = dt.datetime.strptime(enddate, '%Y.%m.%d')
 
-  with Parallel(n_jobs=6) as parallel :
+  with Parallel(n_jobs=4) as parallel :
     result = parallel(delayed(get_news_value)(d, keyword, startdate) for d in range(0, (enddate - startdate).days + 1))
 
 
@@ -110,7 +110,7 @@ def get_news_list(keyword, startdate, enddate) :
 
 start_time = time.time()
 
-get_news_list('삼성', '2023.08.01', '2023.08.08')
+get_news_list('삼성', '2023.08.09', '2023.08.12')
 
 end_time = time.time()
 
